@@ -1,11 +1,11 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include "../kernel/ptree.h"
 
 MODULE_DESCRIPTION("mine");
 MODULE_LICENSE("Dual BSD/GPL - can be anything");
 
- 
 extern int register_ptree(ptree_func func);
 extern void unregister_ptree(ptree_func func);
 
@@ -14,7 +14,7 @@ int ptree_implementation(struct prinfo *buf, int *nr, int pid)
 	return 0;
 }
 
-static int ptree_module_init (void)
+static int __init ptree_module_init (void)
 {
     int rc = 0;
     pr_info("ptree_module: module loaded\n");
@@ -30,7 +30,7 @@ Exit:
     return 0;
 }
 
-static void ptree_module_exit (void)
+static void __exit ptree_module_exit (void)
 {
     pr_info("ptree_module: module unloaded\n");
     unregister_ptree(&ptree_implementation);

@@ -1,11 +1,11 @@
 #include "ptree.h"
 
-ptree_func get_ptree_g = NULL;
+ptree_func get_ptree_g = null;
 EXPORT_SYMBOL(get_ptree_g);
 
 int register_ptree(ptree_func func)
 {
-	if (get_ptree_g == NULL) {
+	if (get_ptree_g == null) {
 		get_ptree_g = func;
 		pr_info("syscall: (in register_ptree): Set get_ptree_g to %p\n", func);
 		pr_info("syscall: (in register_ptree): get_ptree_g:  %p\n", get_ptree_g);
@@ -20,7 +20,7 @@ EXPORT_SYMBOL(register_ptree);
 void unregister_ptree(ptree_func func)
 {
 	if (get_ptree_g == func) {
-		get_ptree_g = NULL;
+		get_ptree_g = null;
 	}
 }
 EXPORT_SYMBOL(unregister_ptree);
@@ -30,10 +30,10 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid)
 	int rc = -1;
 	int _nr = 0;
 	int bytes_copied = 0;
-	struct prinfo *_buf = NULL;
+	struct prinfo *_buf = null;
 
 	pr_info("syscall: entered syscall ptree\n");
-	if (get_ptree_g == NULL) {
+	if (get_ptree_g == null) {
 		rc = request_module("ptree_module");
 		if (rc != 0) {
 			pr_crit("syscall: Failed to request_module\n");
@@ -52,20 +52,20 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid)
 	}
 
 	_buf = (struct prinfo *)kmalloc(_nr * sizeof(struct prinfo), GFP_KERNEL);
-	if (_buf == NULL) {
+	if (_buf == null) {
 		pr_crit("syscall: Failed to kmalloc\n");
 		rc = -ENOSYS;
 		goto Exit;
 	}
 
-	if (get_ptree_g != NULL) {
+	if (get_ptree_g != null) {
 		pr_info("syscall: Calling get_ptree_g \n");
 		rc = get_ptree_g(_buf, &_nr, pid);
 		if (rc != 0) {
 			goto Exit;
 		}
 	} else {
-		pr_crit("syscall: get_ptree_g is still NULL...\n");
+		pr_crit("syscall: get_ptree_g is still null...\n");
 		rc = -ENOSYS;
 		goto Exit;
 	}

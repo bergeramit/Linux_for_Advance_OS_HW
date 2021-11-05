@@ -1,0 +1,3 @@
+EXTRA_CFLAGS = -Wall -g
+obj-m        = ptree_module.o
+# ptree_module-objs = ptree_module_main.o

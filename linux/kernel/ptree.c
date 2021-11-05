@@ -1,6 +1,7 @@
 #include "ptree.h"
 
 ptree_func get_ptree_g = NULL;
+EXPORT_SYMBOL(get_ptree_g);
 
 int register_ptree(ptree_func func)
 {
@@ -41,8 +42,8 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid)
 		}
 	}
 	pr_info("syscall: request_module success\n");
-	pr_info("syscall: (in register_ptree): get_ptree_g:  %p\n", get_ptree_g);
-	pr_info("syscall: (in register_ptree): get_ptree_g's address:  %p\n", &get_ptree_g);
+	pr_info("syscall: (in main): get_ptree_g:  %p\n", get_ptree_g);
+	pr_info("syscall: (in main): get_ptree_g's address:  %p\n", &get_ptree_g);
 	bytes_copied = copy_from_user(&_nr, nr, sizeof(int));
 	if (bytes_copied != sizeof(int)) {
 		pr_crit("Failed to copy_from_user nr\n");

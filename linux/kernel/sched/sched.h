@@ -95,6 +95,7 @@ extern atomic_long_t calc_load_tasks;
 
 extern void calc_global_load_tick(struct rq *this_rq);
 extern long calc_load_fold_active(struct rq *this_rq, long adjust);
+extern struct task_struct *find_task_by_vpid(pid_t vnr);
 
 /*
  * Helpers for converting nanosecond timing to jiffy resolution

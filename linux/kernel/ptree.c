@@ -45,8 +45,6 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 		}
 	}
 	pr_info("syscall: request_module success\n");
-	//pr_info("syscall: (in main): get_ptree_g:  %p\n", get_ptree_g);
-	//pr_info("syscall: (in main): get_ptree_g's address:  %p\n", &get_ptree_g);
 	bytes_not_copied = copy_from_user(&_nr, nr, sizeof(int));
 	if (bytes_not_copied > 0) {
 		pr_crit("Failed to copy_from_user nr. left to copy: %d\n", bytes_not_copied);
@@ -67,6 +65,7 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 		if (rc != 0) {
 			goto Exit;
 		}
+		pr_info("syscall: Copied: %d entries\n", _nr);
 	} else {
 		pr_crit("syscall: get_ptree_g is still NULL...\n");
 		rc = -ENOSYS;
@@ -74,10 +73,6 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 	}
 
 	pr_info("syscall: get_ptree_g run successfully!\n");
-	for(i=0;i<_nr;i++) {
-		pr_info("syscall: comm = %s, pid = %d\n", (_buf+i)->comm, (_buf+i)->pid);
-	}
-
 	bytes_not_copied = copy_to_user(buf, _buf, _nr * sizeof(struct prinfo));
 	if (bytes_not_copied > 0) {
 		pr_crit("syscall: Failed to copy_to_user buf, left to copy: %d\n", bytes_not_copied);

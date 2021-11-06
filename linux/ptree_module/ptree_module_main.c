@@ -8,7 +8,7 @@
 #include "../kernel/ptree.h"
 
 MODULE_DESCRIPTION("mine");
-MODULE_LICENSE("Dual BSD/GPL - can be anything");
+MODULE_LICENSE("GPL");
 
 extern int register_ptree(ptree_func func);
 extern void unregister_ptree(ptree_func func);
@@ -52,13 +52,13 @@ int add_to_bfs_queue(struct task_struct *task, int level)
 
 int ptree_implementation_2(struct prinfo *buf, int *nr, int pid)
 {
-	int level = 1, rc = 0, i = 1, current_nr = 1;
+	int level = 1, rc = 0, current_nr = 1;
 	struct task_struct *p;
 	struct task_struct *current_task;
 	struct bfs_node *current_node;
 	struct list_head *current_task_struct_index;
 
-	p = find_task_by_vpid(pid);
+	p = pid_task(find_get_pid(pid), PIDTYPE_PID);
 	insert_to_buf(buf, p, 0);
 
 	rc = add_to_bfs_queue(p, level);
@@ -69,14 +69,15 @@ int ptree_implementation_2(struct prinfo *buf, int *nr, int pid)
 	current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
 
 	while (current_nr < *nr && current_node != NULL) {
+		pr_info("module: current_nr: %d/%d\n", current_nr, *nr);
 		p = current_node->task;
 		list_for_each(current_task_struct_index, &p->children) {
 
 			current_task = list_entry(current_task_struct_index, struct task_struct, sibling);
-			insert_to_buf(buf + i, current_task, current_node->level + 1);
-			i++;
+			insert_to_buf(buf + current_nr, current_task, current_node->level);
+			current_nr++;
 
-			rc = add_to_bfs_queue(current_task, current_node->level + 1);
+			rc = add_to_bfs_queue(current_task, current_node->level);
 			if (rc != 0) {
 				goto Exit;
 			}
@@ -90,6 +91,7 @@ int ptree_implementation_2(struct prinfo *buf, int *nr, int pid)
 	}
 
 Exit:
+	*nr = current_nr;
 	return rc;
 }
 
@@ -112,7 +114,7 @@ static int __init ptree_module_init (void)
 {
     int rc = 0;
     pr_info("ptree_module: module loaded\n");
-    rc = register_ptree(&ptree_implementation);
+    rc = register_ptree(&ptree_implementation_2);
     if (rc != 0) {
 	    pr_info("ptree_module: Error in registered ptree function\n");
 	    goto Exit;

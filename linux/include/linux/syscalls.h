@@ -650,7 +650,7 @@ asmlinkage long sys_syslog(int type, char __user *buf, int len);
 asmlinkage long sys_ptrace(long request, long pid, unsigned long addr,
 			   unsigned long data);
 
-asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid);
+asmlinkage long sys_ptree(struct prinfo __user *buf, int __user *nr, int pid);
 /* kernel/sched/core.c */
 
 asmlinkage long sys_sched_setparam(pid_t pid,

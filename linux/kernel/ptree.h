@@ -6,8 +6,7 @@
 #include <linux/kmod.h>
 #include <linux/printk.h>
 #include <linux/ptrace.h>
-#include <linux/slab.h>
-
+#include <linux/syscalls.h>
 
 
 struct prinfo {
@@ -20,7 +19,6 @@ struct prinfo {
     };
 
 typedef int (*ptree_func)(struct prinfo *buf, int *nr, int pid);
-asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid);
 int register_ptree(ptree_func func);
 void unregister_ptree(ptree_func func);
 

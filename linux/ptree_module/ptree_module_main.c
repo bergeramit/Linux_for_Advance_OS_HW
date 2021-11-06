@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/string.h>
 #include "../kernel/ptree.h"
 
 MODULE_DESCRIPTION("mine");
@@ -11,6 +12,17 @@ extern void unregister_ptree(ptree_func func);
 
 int ptree_implementation(struct prinfo *buf, int *nr, int pid)
 {
+	int i=0;
+	    pr_info("Sanity Here\n");
+	for (i=0; i<*nr; i++) {
+		(buf + i)->parent_pid = i;
+		(buf + i)->pid = i+1;
+		(buf + i)->state = 0;
+		(buf + i)->uid = 0;
+		strncpy((buf + i)->comm, "dummy", 6);
+		(buf + i)->level = i;
+	}
+	//*nr = i + 1;
 	return 0;
 }
 

@@ -1,11 +1,11 @@
 #include "ptree.h"
 
-ptree_func get_ptree_g = null;
+ptree_func get_ptree_g = NULL;
 EXPORT_SYMBOL(get_ptree_g);
 
 int register_ptree(ptree_func func)
 {
-	if (get_ptree_g == null) {
+	if (get_ptree_g == NULL) {
 		get_ptree_g = func;
 		pr_info("syscall: (in register_ptree): Set get_ptree_g to %p\n", func);
 		pr_info("syscall: (in register_ptree): get_ptree_g:  %p\n", get_ptree_g);
@@ -20,20 +20,27 @@ EXPORT_SYMBOL(register_ptree);
 void unregister_ptree(ptree_func func)
 {
 	if (get_ptree_g == func) {
-		get_ptree_g = null;
+		get_ptree_g = NULL;
 	}
 }
 EXPORT_SYMBOL(unregister_ptree);
 
-asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid)
+void print_params(int _nr)
 {
+	pr_info("syscall: _nr = %d \n", _nr);
+}
+
+SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
+{
+	int i=0;
 	int rc = -1;
 	int _nr = 0;
-	int bytes_copied = 0;
-	struct prinfo *_buf = null;
+	int bytes_not_copied = 0;
+	struct prinfo *_buf = NULL;
 
+	pr_info("syscall: pid: %d\n", pid);
 	pr_info("syscall: entered syscall ptree\n");
-	if (get_ptree_g == null) {
+	if (get_ptree_g == NULL) {
 		rc = request_module("ptree_module");
 		if (rc != 0) {
 			pr_crit("syscall: Failed to request_module\n");
@@ -44,49 +51,61 @@ asmlinkage int sys_ptree(struct prinfo *buf, int *nr, int pid)
 	pr_info("syscall: request_module success\n");
 	pr_info("syscall: (in main): get_ptree_g:  %p\n", get_ptree_g);
 	pr_info("syscall: (in main): get_ptree_g's address:  %p\n", &get_ptree_g);
-	bytes_copied = copy_from_user(&_nr, nr, sizeof(int));
-	if (bytes_copied != sizeof(int)) {
-		pr_crit("Failed to copy_from_user nr\n");
+	bytes_not_copied = copy_from_user(&_nr, nr, sizeof(int));
+	if (bytes_not_copied > 0) {
+		pr_crit("Failed to copy_from_user nr. left to copy: %d\n", bytes_not_copied);
 		rc = -ENOSYS;
 		goto Exit;
 	}
 
 	_buf = (struct prinfo *)kmalloc(_nr * sizeof(struct prinfo), GFP_KERNEL);
-	if (_buf == null) {
+	if (_buf == NULL) {
 		pr_crit("syscall: Failed to kmalloc\n");
 		rc = -ENOSYS;
 		goto Exit;
 	}
 
-	if (get_ptree_g != null) {
+	print_params(_nr);
+
+	if (get_ptree_g != NULL) {
 		pr_info("syscall: Calling get_ptree_g \n");
 		rc = get_ptree_g(_buf, &_nr, pid);
 		if (rc != 0) {
 			goto Exit;
 		}
 	} else {
-		pr_crit("syscall: get_ptree_g is still null...\n");
+		pr_crit("syscall: get_ptree_g is still NULL...\n");
 		rc = -ENOSYS;
 		goto Exit;
 	}
 
 	pr_info("syscall: Return success from get_ptree_g\n");
-	bytes_copied = copy_to_user(buf, _buf, _nr * sizeof(struct prinfo));
-	if (bytes_copied != (_nr * sizeof(struct prinfo))) {
-		pr_crit("syscall: Failed to copy_to_user buf\n");
+	for(i=0;i<_nr;i++) {
+		pr_info("syscall: comm = %s, pid = %d\n", (_buf+i)->comm, (_buf+i)->pid);
+	}
+
+	bytes_not_copied = copy_to_user(buf, _buf, _nr * sizeof(struct prinfo));
+	if (bytes_not_copied > 0) {
+		pr_crit("syscall: Failed to copy_to_user buf, left to copy: %d\n", bytes_not_copied);
 		rc = -ENOSYS;
 		goto Exit;
 	}
+	kfree(_buf);
 
-	bytes_copied = copy_to_user(nr, &_nr, sizeof(int));
-	if (bytes_copied != sizeof(int)) {
-		pr_crit("syscall: Failed to copy_to_user nr\n");
+	print_params(_nr);
+	pr_info("syscall: trying to copy _nr to user\n");
+	bytes_not_copied = copy_to_user(nr, &_nr, sizeof(int));
+	if (bytes_not_copied > 0) {
+		pr_crit("syscall: Failed to copy_to_user nr, left to copy: %d\n", bytes_not_copied);
 		rc = -ENOSYS;
 		goto Exit;
 	}
 	pr_info("syscall: Finished copy to user, exiting\n");
 
 Exit:
+	if (_buf != NULL) {
+		kfree(_buf);
+	}
 	return rc;
 }
 

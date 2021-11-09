@@ -7,9 +7,6 @@ int register_ptree(ptree_func func)
 {
 	if (get_ptree_g == NULL) {
 		get_ptree_g = func;
-		pr_info("syscall: (in register_ptree): Set get_ptree_g to %p\n", func);
-		//pr_info("syscall: (in register_ptree): get_ptree_g:  %p\n", get_ptree_g);
-		//pr_info("syscall: (in register_ptree): get_ptree_g's address:  %p\n", &get_ptree_g);
 		return 0;
 
 	}
@@ -28,14 +25,17 @@ EXPORT_SYMBOL(unregister_ptree);
 
 SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 {
-	int i=0;
 	long rc = 0;
 	int _nr = 0;
 	int bytes_not_copied = 0;
 	struct prinfo *_buf = NULL;
 
+	if (buf == NULL || nr == NULL) {
+		rc = -EINVAL;
+		goto Exit;
+	}
+
 	pr_info("syscall: entered syscall ptree\n");
-	pr_info("syscall: got pid: %d\n", pid);
 	if (get_ptree_g == NULL) {
 		rc = request_module("ptree_module");
 		if (rc != 0) {
@@ -48,14 +48,14 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 	bytes_not_copied = copy_from_user(&_nr, nr, sizeof(int));
 	if (bytes_not_copied > 0) {
 		pr_crit("Failed to copy_from_user nr. left to copy: %d\n", bytes_not_copied);
-		rc = -ENOSYS;
+		rc = -EFAULT;
 		goto Exit;
 	}
 
 	_buf = (struct prinfo *)kmalloc(_nr * sizeof(struct prinfo), GFP_KERNEL);
 	if (_buf == NULL) {
 		pr_crit("syscall: Failed to kmalloc\n");
-		rc = -ENOSYS;
+		rc = -EFAULT;
 		goto Exit;
 	}
 
@@ -72,18 +72,18 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 		goto Exit;
 	}
 
-	pr_info("syscall: get_ptree_g run successfully!\n");
+	pr_info("syscall: get_ptree run successfully!\n");
 	bytes_not_copied = copy_to_user(buf, _buf, _nr * sizeof(struct prinfo));
 	if (bytes_not_copied > 0) {
 		pr_crit("syscall: Failed to copy_to_user buf, left to copy: %d\n", bytes_not_copied);
-		rc = -ENOSYS;
+		rc = -EFAULT;
 		goto Exit;
 	}
 	pr_info("syscall: trying to copy _nr to user\n");
 	bytes_not_copied = copy_to_user(nr, &_nr, sizeof(int));
 	if (bytes_not_copied > 0) {
 		pr_crit("syscall: Failed to copy_to_user nr, left to copy: %d\n", bytes_not_copied);
-		rc = -ENOSYS;
+		rc = -EFAULT;
 		goto Exit;
 	}
 	pr_info("syscall: Finished copy to user, exiting...\n");

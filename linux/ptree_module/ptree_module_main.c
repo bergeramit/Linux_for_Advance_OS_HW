@@ -44,37 +44,51 @@ int add_to_bfs_queue(struct task_struct *task, int level)
 		return -1;
 	}
 	n->task = task;
-	n->level = level;
+	n->level = level + 1;
 	list_add_tail(&(n->list), &bfs_list);
 	return 0;
 }
 
+void empty_bfs_queue(void) {
+	return;	
+}
 
-int ptree_implementation_2(struct prinfo *buf, int *nr, int pid)
+int get_ptree_full(struct prinfo *buf, int *nr, int pid)
 {
-	int level = 1, rc = 0, current_nr = 1;
-	struct task_struct *p;
-	struct task_struct *current_task;
-	struct bfs_node *current_node;
+	int rc = 0, current_nr = 0;
+	struct task_struct *p = NULL;
+	struct task_struct *current_task = NULL;
+	struct bfs_node *current_node = NULL;
 	struct list_head *current_task_struct_index;
 
 	p = pid_task(find_get_pid(pid), PIDTYPE_PID);
+	if (p == NULL) {
+		pr_crit("module: Could not get task struct of pid: %d\n", pid);
+		goto Exit;
+	}
 	insert_to_buf(buf, p, 0);
+	current_nr++;
 
-	rc = add_to_bfs_queue(p, level);
+	rc = add_to_bfs_queue(p, -1);
 	if (rc != 0) {
 		goto Exit;
 	}
 
 	current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
 
-	while (current_nr < *nr && current_node != NULL) {
-		pr_info("module: current_nr: %d/%d\n", current_nr, *nr);
+	while (current_node != NULL) {
 		p = current_node->task;
 		list_for_each(current_task_struct_index, &p->children) {
 
+			if (current_nr >= *nr) {
+				/* finished successfully */
+				pr_info("module: retreived every requested entries(%d/%d)\n", current_nr, *nr);
+				rc = 0;
+				goto Exit;
+			}
+
 			current_task = list_entry(current_task_struct_index, struct task_struct, sibling);
-			insert_to_buf(buf + current_nr, current_task, current_node->level);
+			insert_to_buf(buf + current_nr, current_task, current_node->level + 1);
 			current_nr++;
 
 			rc = add_to_bfs_queue(current_task, current_node->level);
@@ -85,17 +99,18 @@ int ptree_implementation_2(struct prinfo *buf, int *nr, int pid)
 		}
 		list_del(&(current_node->list));
 		kfree(current_node);
-		level++;
 
 		current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
 	}
+	pr_info("module: retreived (%d/%d), process does not have more\n", current_nr, *nr);
 
 Exit:
+	empty_bfs_queue();
 	*nr = current_nr;
 	return rc;
 }
 
-int ptree_implementation(struct prinfo *buf, int *nr, int pid)
+int get_ptree_dummy(struct prinfo *buf, int *nr, int pid)
 {
 	int i=0;
 	for (i=0; i<*nr; i++) {
@@ -106,7 +121,7 @@ int ptree_implementation(struct prinfo *buf, int *nr, int pid)
 		strncpy((buf + i)->comm, "dummy", 6);
 		(buf + i)->level = i;
 	}
-	//*nr = i + 1;
+	*nr = i + 1;
 	return 0;
 }
 
@@ -114,7 +129,7 @@ static int __init ptree_module_init (void)
 {
     int rc = 0;
     pr_info("ptree_module: module loaded\n");
-    rc = register_ptree(&ptree_implementation_2);
+    rc = register_ptree(&get_ptree_full);
     if (rc != 0) {
 	    pr_info("ptree_module: Error in registered ptree function\n");
 	    goto Exit;
@@ -128,7 +143,7 @@ Exit:
 static void __exit ptree_module_exit (void)
 {
     pr_info("ptree_module: module unloaded\n");
-    unregister_ptree(&ptree_implementation_2);
+    unregister_ptree(&get_ptree_full);
     pr_info("ptree_module: unregistered ptree function\n");
 }
 

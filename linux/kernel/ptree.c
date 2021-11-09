@@ -79,7 +79,6 @@ SYSCALL_DEFINE3(ptree, struct prinfo __user *, buf, int __user *, nr, int , pid)
 		rc = -ENOSYS;
 		goto Exit;
 	}
-
 	pr_info("syscall: trying to copy _nr to user\n");
 	bytes_not_copied = copy_to_user(nr, &_nr, sizeof(int));
 	if (bytes_not_copied > 0) {

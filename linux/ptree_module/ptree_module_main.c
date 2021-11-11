@@ -50,7 +50,15 @@ int add_to_bfs_queue(struct task_struct *task, int level)
 }
 
 void empty_bfs_queue(void) {
-	return;	
+	struct bfs_node *current_node = NULL;
+
+	current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
+	while (current_node != NULL) {
+		list_del(&(current_node->list));
+		kfree(current_node);
+
+		current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
+	}
 }
 
 int get_ptree_full(struct prinfo *buf, int *nr, int pid)

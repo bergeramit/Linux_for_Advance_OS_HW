@@ -1,24 +1,33 @@
 #include "ptree.h"
 
+DEFINE_SPINLOCK(register_lock);
+
 ptree_func get_ptree_g = NULL;
 EXPORT_SYMBOL(get_ptree_g);
 
 int register_ptree(ptree_func func)
 {
+	int rc = 0;
+	spin_lock(&register_lock);
 	if (get_ptree_g == NULL) {
 		get_ptree_g = func;
-		return 0;
-
+		goto Exit;
 	}
-	return -EBUSY;
+	rc = -EBUSY;
+
+Exit:
+	spin_unlock(&register_lock);
+	return rc;
 }
 EXPORT_SYMBOL(register_ptree);
 
 void unregister_ptree(ptree_func func)
 {
+	spin_lock(&register_lock);
 	if (get_ptree_g == func) {
 		get_ptree_g = NULL;
 	}
+	spin_unlock(&register_lock);
 }
 EXPORT_SYMBOL(unregister_ptree);
 

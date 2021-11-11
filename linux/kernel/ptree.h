@@ -6,6 +6,7 @@
 #include <linux/kmod.h>
 #include <linux/printk.h>
 #include <linux/ptrace.h>
+#include <linux/spinlock.h>
 #include <linux/syscalls.h>
 
 

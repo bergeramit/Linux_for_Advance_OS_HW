@@ -78,12 +78,14 @@ int get_ptree_full(struct prinfo *buf, int *nr, int pid)
 
 	while (current_node != NULL) {
 		p = current_node->task;
+		rcu_read_lock();
 		list_for_each(current_task_struct_index, &p->children) {
 
 			if (current_nr >= *nr) {
 				/* finished successfully */
 				pr_info("module: retreived every requested entries(%d/%d)\n", current_nr, *nr);
 				rc = 0;
+				rcu_read_unlock();
 				goto Exit;
 			}
 
@@ -91,10 +93,12 @@ int get_ptree_full(struct prinfo *buf, int *nr, int pid)
 			insert_to_buf(buf + current_nr, current_task, current_node->level + 1);
 			current_nr++;
 
+			rcu_read_unlock();
 			rc = add_to_bfs_queue(current_task, current_node->level);
 			if (rc != 0) {
 				goto Exit;
 			}
+			rcu_read_lock();
 
 		}
 		list_del(&(current_node->list));
@@ -102,6 +106,7 @@ int get_ptree_full(struct prinfo *buf, int *nr, int pid)
 
 		current_node = list_first_entry_or_null(&bfs_list, struct bfs_node, list);
 	}
+	rcu_read_lock();
 	pr_info("module: retreived (%d/%d), process does not have more\n", current_nr, *nr);
 
 Exit:

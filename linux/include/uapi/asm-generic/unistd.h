@@ -388,6 +388,9 @@ __SYSCALL(__NR_ptrace, sys_ptrace)
 #define __NR_ptree 449
 __SYSCALL(__NR_ptree, sys_ptree)
 
+#define __NR_ptree 450
+__SYSCALL(__NR_ptree, sys_mapspages)
+
 /* kernel/sched/core.c */
 #define __NR_sched_setparam 118
 __SYSCALL(__NR_sched_setparam, sys_sched_setparam)

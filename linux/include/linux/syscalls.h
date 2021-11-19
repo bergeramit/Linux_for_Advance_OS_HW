@@ -651,6 +651,9 @@ asmlinkage long sys_ptrace(long request, long pid, unsigned long addr,
 			   unsigned long data);
 
 asmlinkage long sys_ptree(struct prinfo __user *buf, int __user *nr, int pid);
+
+/* kernel/mapspages.c */
+asmlinkage long sys_mapspages(unsigned long start, unsigned long end, char __user *buf, size_t size);
 /* kernel/sched/core.c */
 
 asmlinkage long sys_sched_setparam(pid_t pid,

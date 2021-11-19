@@ -18,11 +18,29 @@ MODULE_LICENSE("GPL");
 extern int register_mapspages(mapspages_func func);
 extern void unregister_mapspages(mapspages_func func);
 
+size_t insert_vma_record(char *buffer, struct vm_area_struct *current_vma, size_t max_size)
+{
+    char r, w, x, s;
+    r = (current_vma->vm_flags & VM_READ) ? 'r' : '-';
+    w = (current_vma->vm_flags & VM_WRITE) ? 'w' : '-';
+    x = (current_vma->vm_flags & VM_EXEC) ? 'x' : '-';
+    s = (current_vma->vm_flags & VM_SHARED) ? 's' : 'p';
+    return snprintf(buffer,
+                    max_size,
+                    "%ld-%ld %c%c%c%c %ld %d:%d %ld\n",
+                    current_vma->vm_start,
+                    current_vma->vm_end,
+                    r, w, x, s,
+                    current_vma->vm_pgoff, 
+                    MAJOR(current_vma->vm_file->f_inode->i_rdev),
+                    MINOR(current_vma->vm_file->f_inode->i_rdev),
+                    current_vma->vm_file->f_inode->i_ino);
+}
 
 int get_mapspages_full_walk(unsigned long start, unsigned long end, char *buf, size_t size, size_t *out_size)
 {
-    char r, w, x, s;
     int ret = 0;
+    size_t insert_size = 0;
     struct vm_area_struct *current_vma = NULL;
 
     ret = down_read_killable(&current->mm->mmap_sem);
@@ -33,25 +51,24 @@ int get_mapspages_full_walk(unsigned long start, unsigned long end, char *buf, s
     current_vma = current->mm->mmap;
     while (current_vma != NULL) {
         if (start <= current_vma->vm_start && current_vma->vm_end <= end) {
-            r = (current_vma->vm_flags & VM_READ) ? 'r' : '-';
-            w = (current_vma->vm_flags & VM_WRITE) ? 'w' : '-';
-            x = (current_vma->vm_flags & VM_EXEC) ? 'x' : '-';
-            s = (current_vma->vm_flags & VM_SHARED) ? 's' : 'p';
-            sprintf(buf, "%ld-%ld %c%c%c%c %ld %d:%d %ld\n",
-                    current_vma->vm_start,
-                    current_vma->vm_end,
-                    r, w, x, s,
-                    current_vma->vm_pgoff, 
-                    MAJOR(current_vma->vm_file->f_inode->i_rdev),
-                    MINOR(current_vma->vm_file->f_inode->i_rdev),
-                    current_vma->vm_file->f_inode->i_ino);
+
+            /* Determine if there is enough space in buff before trying to transfer */
+            insert_size = insert_vma_record(NULL, current_vma, size - *out_size);
+            if (*out_size + insert_size > size) {
+                up_read(&current->mm->mmap_sem);
+                goto Exit;
+            }
+
+            insert_vma_record(&(buf[*out_size]), current_vma, size - *out_size);
+            buf[*out_size + insert_size-1] = '\n';
+            *out_size += insert_size;
         }
         current_vma = current_vma->vm_next;
     }
     up_read(&current->mm->mmap_sem);
 
 Exit:
-    return 1;
+    return 0;
 }
 
 int get_mapspages_full(unsigned long start, unsigned long end, char *buf, size_t size, size_t *out_size)
@@ -69,7 +86,7 @@ static int __init mapspages_module_init (void)
 {
     int rc = 0;
     pr_info("mapspages_module: module loaded\n");
-    rc = register_mapspages(&get_mapspages_full);
+    rc = register_mapspages(&get_mapspages_full_walk);
     if (rc != 0) {
 	    pr_info("mapspages_module: Error in registered mapspages function\n");
 	    goto Exit;
@@ -83,7 +100,7 @@ Exit:
 static void __exit mapspages_module_exit (void)
 {
     pr_info("mapspages_module: module unloaded\n");
-    unregister_mapspages(&get_mapspages_full);
+    unregister_mapspages(&get_mapspages_full_walk);
     pr_info("mapspages_module: unregistered mapspages function\n");
 }
 

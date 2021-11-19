@@ -110,7 +110,7 @@ size_t insert_vma_record(char *buffer, struct vm_area_struct *current_vma, size_
     /* Safety should be removed */
     *(descriptor.string + total_pages_in_vma) = 0;
 
-    pr_info("mapspages_module: current VMA: %lx-%lx %c%c%c%c %lx %d:%d %lx %s\n",
+    pr_info("mapspages_module: current VMA: %lx-%lx %c%c%c%c %lx %2d:%2d %lx %s\n",
             current_vma->vm_start,
             current_vma->vm_end,
             r, w, x, s,

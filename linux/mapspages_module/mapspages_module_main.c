@@ -18,14 +18,11 @@ MODULE_LICENSE("GPL");
 extern int register_mapspages(mapspages_func func);
 extern void unregister_mapspages(mapspages_func func);
 
-int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk)
-{
-    struct vm_area_struct *vma = walk->vma;
-}
 
 int get_mapspages_full_walk(unsigned long start, unsigned long end, char *buf, size_t size, size_t *out_size)
 {
-    char r, w, e, s;
+    char r, w, x, s;
+    int ret = 0;
     struct vm_area_struct *current_vma = NULL;
 
     ret = down_read_killable(&current->mm->mmap_sem);
@@ -40,7 +37,7 @@ int get_mapspages_full_walk(unsigned long start, unsigned long end, char *buf, s
             w = (current_vma->vm_flags & VM_WRITE) ? 'w' : '-';
             x = (current_vma->vm_flags & VM_EXEC) ? 'x' : '-';
             s = (current_vma->vm_flags & VM_SHARED) ? 's' : 'p';
-            sprintf(buf, "%ld-%ld %c%c%c%c %d:%d %ld\n",
+            sprintf(buf, "%ld-%ld %c%c%c%c %ld %d:%d %ld\n",
                     current_vma->vm_start,
                     current_vma->vm_end,
                     r, w, x, s,
@@ -52,6 +49,7 @@ int get_mapspages_full_walk(unsigned long start, unsigned long end, char *buf, s
         current_vma = current_vma->vm_next;
     }
     up_read(&current->mm->mmap_sem);
+
 Exit:
     return 1;
 }
@@ -61,9 +59,10 @@ int get_mapspages_full(unsigned long start, unsigned long end, char *buf, size_t
 	pr_info("mapspages_module: In get_mapspages_full from syscall\n");
     pr_info("mapspages_module: start: %ld\n", start);
     pr_info("mapspages_module: end: %ld\n", end);
-    pr_info("mapspages_module: size: %d\n", size);
+    pr_info("mapspages_module: size: %ld\n", size);
     *buf = '*';
-    return 1;
+    *out_size = 1;
+    return 0;
 }
 
 static int __init mapspages_module_init (void)

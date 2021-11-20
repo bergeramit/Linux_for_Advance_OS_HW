@@ -48,7 +48,7 @@ int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
     struct page *current_page = NULL;
 
     current_page = pte_page(*pte);
-    page_refcount = page_count(current_page);
+    page_refcount = page_ref_count(current_page);
 
     if (page_refcount > 9) {
         *(descriptor->string + descriptor->size) = 'x';
@@ -114,7 +114,7 @@ size_t insert_vma_record(char *buffer, struct vm_area_struct *current_vma, size_
     /* Safety should be removed */
     *(descriptor.string + total_pages_in_vma) = 0;
 
-    pr_info("mapspages_module: current VMA: %lx-%lx %c%c%c%c %lx %2d:%2d %lx %s\n",
+    pr_info("mapspages_module: current VMA: %lx-%lx %c%c%c%c %lx %.2d:%.2d %lx %s\n",
             current_vma->vm_start,
             current_vma->vm_end,
             r, w, x, s,

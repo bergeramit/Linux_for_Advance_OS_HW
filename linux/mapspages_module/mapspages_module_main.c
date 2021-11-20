@@ -7,6 +7,7 @@
 #include <linux/export.h>
 #include <linux/sched.h>
 #include <linux/pagewalk.h>
+#include <linux/page_ref.h>
 #include <linux/mm_types.h>
 #include <linux/mm.h>
 #include <asm/current.h>
@@ -42,16 +43,19 @@ int count_pte_hole(unsigned long addr, unsigned long next, struct mm_walk *walk)
 
 int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk) 
 {
+    int page_refcount = 0;
     struct page_string_descriptor *descriptor = (struct page_string_descriptor *)walk->private;
     struct page *current_page = NULL;
-    current_page = pte_page(*pte);
 
-    if (current_page->_refcount.counter > 9) {
+    current_page = pte_page(*pte);
+    page_refcount = page_count(current_page);
+
+    if (page_refcount > 9) {
         *(descriptor->string + descriptor->size) = 'x';
-    } else if (current_page->_refcount.counter == 0) {
+    } else if (page_refcount == 0) {
         *(descriptor->string + descriptor->size) = '.';
     } else {
-        *(descriptor->string + descriptor->size) = TO_DIGIT(current_page->_refcount.counter);
+        *(descriptor->string + descriptor->size) = TO_DIGIT(page_refcount);
     }
 
     descriptor->size += 1;

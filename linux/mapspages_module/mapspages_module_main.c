@@ -44,11 +44,17 @@ int count_pte_hole(unsigned long addr, unsigned long next, struct mm_walk *walk)
 int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk) 
 {
     int page_refcount = 0;
+    int page_refcount_second = 0;
     struct page_string_descriptor *descriptor = (struct page_string_descriptor *)walk->private;
     struct page *current_page = NULL;
 
     current_page = pte_page(*pte);
-    page_refcount = page_ref_count(current_page);
+    page_refcount = page_count(current_page);
+    page_refcount_second = page_count(current_page);
+    if (page_refcount > 0 && page_refcount_second == page_refcount) {
+        /* Module counts itself */
+        page_refcount--;
+    }
 
     if (page_refcount > 9) {
         *(descriptor->string + descriptor->size) = 'x';

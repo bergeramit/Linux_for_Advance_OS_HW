@@ -34,27 +34,14 @@ int count_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct m
     return 0;
 }
 
-int count_pte_hole(unsigned long addr, unsigned long next, struct mm_walk *walk)
-{
-    size_t *counter = (size_t *)walk->private;
-    (*counter)++;
-    return 0;
-}
-
 int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct mm_walk *walk) 
 {
     int page_refcount = 0;
-    int page_refcount_second = 0;
     struct page_string_descriptor *descriptor = (struct page_string_descriptor *)walk->private;
     struct page *current_page = NULL;
 
     current_page = pte_page(*pte);
     page_refcount = page_count(current_page);
-    page_refcount_second = page_count(current_page);
-    if (page_refcount > 0 && page_refcount_second == page_refcount) {
-        /* Module counts itself */
-        page_refcount--;
-    }
 
     if (page_refcount > 9) {
         *(descriptor->string + descriptor->size) = 'x';
@@ -68,20 +55,11 @@ int handle_pte_entry(pte_t *pte, unsigned long addr, unsigned long next, struct 
     return 0;
 }
 
-int handle_pte_hole(unsigned long addr, unsigned long next, struct mm_walk *walk)
-{
-    struct page_string_descriptor *descriptor = (struct page_string_descriptor *)walk->private;
-    *(descriptor->string + descriptor->size) = '.';
-    descriptor->size += 1;
-    return 0;
-}
-
 size_t get_total_pages_in_vma(struct vm_area_struct *current_vma)
 {
     size_t total_pages_in_vma = 0;
     struct mm_walk_ops counter_ops = {
-        .pte_entry = count_pte_entry,
-        .pte_hole = count_pte_hole
+        .pte_entry = count_pte_entry
     };
     walk_page_vma(current_vma, &counter_ops, &total_pages_in_vma);
     return total_pages_in_vma;
@@ -94,8 +72,7 @@ size_t insert_vma_record(char *buffer, struct vm_area_struct *current_vma, size_
     size_t total_pages_in_vma = 0;
     struct page_string_descriptor descriptor = {0};
     struct mm_walk_ops ops = {
-        .pte_entry = handle_pte_entry,
-        .pte_hole = handle_pte_hole
+        .pte_entry = handle_pte_entry
     };
     unsigned int major = (current_vma->vm_file) ? MAJOR(current_vma->vm_file->f_inode->i_rdev) : 0;
     unsigned int minor = (current_vma->vm_file) ? MINOR(current_vma->vm_file->f_inode->i_rdev) : 0;
